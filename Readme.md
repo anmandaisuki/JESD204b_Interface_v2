@@ -1,20 +1,40 @@
-# AXIS_INTERFACE_CONVERTION_FOR_ADC
-* ADCから送られてきたパラレルデータをAXISインターフェイスに変換するIP
-    * 高速ADCの信号はトランシーバとかでデシリアライズされて、パラレル化されてる。
-* AXISの動作クロック(axis_aclk)はADCから送られてくるパラレルデータの同期クロックと一致させる。
-    * 一致させない場合、非同期FIFO必要でちょっと面倒。そもそもADCデータを大容量RAMとかに送るためのAXISインターフェイスなので、AXISインターフェイスのFIFOは同期FIFOで必要最低限にしておく。
-    * このIPからAXIS用のm_axis_aclkを出力するようにした。
+# プロジェクトの管理方法
+* gitでproject作成に必要なソースのみ管理するようにして、ソースからprojectを再生成できるようにしてある。
+* 開発段階を想定しているので、ブロックデザインは考慮せずRTLソースとIP(.xci),テストベンチソース,制約ファイル(.xdc)のみを管理するようにし、そこからプロジェクトを再生成する。
 
-## 概要
-* ADCのパラレルデータはIP接続前に整理しておく。このIPはただAXISインターフェイスに変換するだけ。
-    * 例えば、8bitデータ(@ 600MHz)4つをまとめて、32bit(@ 150MHz)で転送する際のデータ整理は、このIP接続前に処理する。
-* i_con_adcsideがHのときに、ADCデータがFIFOに書き込まれて、i_con_axissideがHのときにAXISから出力される。ただしFIFOがfullになったら、ADCからの書き込みを止める。またFIFOがemptyになったらAXISからの出力を停止する。
-    * 基本的にi_con_adcside, i_con_axiside両方Hにして使用することを想定。
 
-## 使い方
-* 高速トランシーバーでデシリアライズされたADCの信号をDRAMとかに転送するときに使用することを想定。トランシーバからのデータをAXISインターフェイスに変換して、AXI_DMAとかでRAMに転送するのが典型的な使い方。
+## 使う前に確認してほしいこと
+* `clean.bat`と`create_project.bat`ファイル内のProject_Name変数が一致していること。.batファイル内のProject_Nameが`create_project.bat`で作成されるプロジェクト名になるので、プロジェクト名を変えたいときはここを編集する。
 
-## 必要なIP
-* [FIFO_SYNC](https://github.com/sota5460/HDL_Source_Storage/blob/main/fifo/fifo_sync.v)
+
+## 編集するときの流れ
+1. git clone ...　でこのリポジトリをclone
+2. create_project.batでソースからプロジェクトを再生成。ソースをそのまま編集するのであれば、プロジェクトを再合成する必要なし。
+3. プロジェクトを編集
+    * 新しくソースファイルを追加するときはsrcディレクトリ内の適切なパスに格納すること。
+    * sources_1などのファイルセットはsrcディレクトリ内のファイルがリンクされているので、Vivado上で編集すると、srcファイル内のデータが更新される。
+    * 新しくvivado上でファイルを追加するときは、srcディレクトリ内に格納すること。
+4. gitでバージョンコントロースする前にclean.batをすると、gitの管理対象以外のものをすべて削除する。ソースファイル以外を削除する。(create_project.batでソースからプロジェクトは再生成できる)　
+5. clean.bat後にgit add, git commit, git pushでgitを更新。
+
+## srcディレクトリの構成
+```
+src/rtl        : RTLソース(.v, .sv, .vh)格納フォルダ
+src/ip         : IP(.xci)格納フォルダ
+src/sim        : テストベンチ用RTL(.v, .sv, .vh)格納フォルダ
+src/constraint : 制約ファイル格納フォルダ
+```
+* gitだと、空のフォルダを管理できないので、上記フォルダが存在しないときは自分で作成すること。
+
+* tclコマンドでのファイル検索が検索ディレクトリの中にフォルダがあるとめんどくさかったので、上記ディレクトリの中にフォルダは作らないこと。(src/rtl/folder1みたいにsrc/rtlの中にフォルダを作らない。)src/rtlの下にそのままソースファイルを格納していく。Vivado上では自動で依存関係とか調整してくれるので、そこまで使いづらいとかはないと思う。
+
+
+## 各ファイル/フォルダの説明
+```
+clean.bat          : vivadoでprojectを再生成するときに作られるログ・ファイルやプロジェクトファイルを削除する。
+create_project.bat : 内部でcreate_project.tclを呼び出して、projectを再生成する。
+src/create_project.tcl : 直接は起動しない。create_project.batによって起動される。
+src                : プロジェクトを再生成するためのソース・ファイルを格納するディレクトリ。
+```
 
 
