@@ -14,8 +14,9 @@
     * 新しくソースファイルを追加するときはsrcディレクトリ内の適切なパスに格納すること。
     * sources_1などのファイルセットはsrcディレクトリ内のファイルがリンクされているので、Vivado上で編集すると、srcファイル内のデータが更新される。
     * 新しくvivado上でファイルを追加するときは、srcディレクトリ内に格納すること。
-4. gitでバージョンコントロースする前にclean.batをすると、gitの管理対象以外のものをすべて削除する。ソースファイル以外を削除する。(create_project.batでソースからプロジェクトは再生成できる)　
-5. clean.bat後にgit add, git commit, git pushでgitを更新。
+4. git add srcでsrcフォルダだけ更新する。
+    * clean.batを使用して、git add .ですべて更新しても良い。
+5. git commit, git pushでgitを更新。
 
 ## srcディレクトリの構成
 ```

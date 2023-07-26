@@ -68,6 +68,7 @@ end
 initial begin 
     fork
         init_dclk();
+        init_freerunclk();
     join_none
     
     #(SYSREF_START);
@@ -78,7 +79,7 @@ initial begin
 //    $finish;
 end
 
-jesd204b_rx_controller #(
+jesd204b_rx_controller_slide #(
     .DIV_DCLK  (4),   
     .FRAME_SIZE(1),   
     .FMLC_NUM  (8)
