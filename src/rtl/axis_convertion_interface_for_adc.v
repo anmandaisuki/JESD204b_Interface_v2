@@ -7,12 +7,12 @@ module AXIS_CONVERTION_INTERFACE_FOR_ADC #(
         input wire  m_axis_aresetn,
 
         output reg  m_axis_tvalid,
-        output reg [DATAWIDTH - 1 : 0] m_axis_tdata,
+        output reg [DATA_WIDTH - 1 : 0] m_axis_tdata,
         output reg  m_axis_tlast,
         input wire  m_axis_tready,
 
     // ADC interface
-        input wire [DATAWIDTH - 1 : 0] i_adc_data,
+        input wire [DATA_WIDTH - 1 : 0] i_adc_data,
         input wire  i_adc_data_clk,
 
     // Controll and Status
@@ -22,10 +22,8 @@ module AXIS_CONVERTION_INTERFACE_FOR_ADC #(
 
 );
 
-assign m_axis_aclk = adc_data_clk;  // axis_aclk is correspond to adc_data_clk
+assign m_axis_aclk = i_adc_data_clk;  // axis_aclk is correspond to adc_data_clk
 
-reg [DATA_WIDTH-1:0] axis_send_data;
-assign m_axis_tdata = fifo_read_data;
 wire [DATA_WIDTH-1:0] fifo_read_data;
 
 reg  i_ren;
@@ -50,7 +48,7 @@ always @(posedge m_axis_aclk ) begin
     end else begin
         if(i_con_axisside && !o_empty)begin
             m_axis_tvalid <= 1'b1;
-            axis_send_data <= fifo_read_data;
+            m_axis_tdata <= fifo_read_data;
 
             if(m_axis_tready == 1)begin
                 i_ren <= 1'b1;
