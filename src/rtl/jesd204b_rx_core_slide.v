@@ -30,7 +30,8 @@ module jesd204b_rx_core_slide #(
         // output wire o_rxcommadeten_in , always 1
         output wire o_rxslide_in        ,   
         input wire i_rxbyteisaligned_out,
-
+        (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME o_rxusrclk2, FREQ_HZ 125000000, FREQ_TOLERANCE_HZ 0, PHASE 0.0" *)
+        (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 o_rxusrclk2 CLK" *)
         output wire o_rxusrclk2,    // 250 MHz (RXDATA = 64bit), 62.5MHz (RXDATA = 32bit)
         input wire [USERDATA_WIDTH-1:0] i_gtwiz_userdata_rx_out,
 
@@ -236,41 +237,87 @@ assign o_rxslide_in = rxslide_in;
     end
 
     // RXSLIDE Process 
-    reg [6:0] rxusrclk2_edge_cnt = 0; // count up to 35
-
-    always @(negedge o_rxusrclk2 or posedge o_rxusrclk2 ) begin
-        if(JESD204_state == 3'b010)begin
+    reg [6:0] rxusrclk2_edge_cnt = 0; // count up to 35. This value need be above 32. See UG578.
+    
+    wire rxusrclk_pos = o_rxusrclk2;
+    wire rxusrclk_neg =! o_rxusrclk2;
+    
+    always @(posedge rxusrclk_pos) begin
+         if(JESD204_state == 3'b010)begin
             if (lane0_data0 != K285_K &&
                 lane0_data1 != K285_K &&
                 lane0_data2 != K285_K &&
                 lane0_data3 != K285_K) begin     
-
-                // if posedge
-                if(o_rxusrclk2 == 1'b1)begin
+                
+       
                     if(rxusrclk2_edge_cnt == 35)begin
                         rxusrclk2_edge_cnt <= 0;
                      end  else begin
                              rxusrclk2_edge_cnt = rxusrclk2_edge_cnt + 1;
                      end
+            end else begin
+                    JESD204_state <= 3'b011;
+                    nsync <= 1'b1; 
                 end
-                // if negedge
-                if(o_rxusrclk2 == 1'b0)begin
-                    if (rxusrclk2_edge_cnt == 0) begin
+        end
+    end
+    
+    always @(posedge rxusrclk_neg) begin
+         if(JESD204_state == 3'b010)begin
+            if (lane0_data0 != K285_K &&
+                lane0_data1 != K285_K &&
+                lane0_data2 != K285_K &&
+                lane0_data3 != K285_K) begin     
+    
+                if (rxusrclk2_edge_cnt == 0) begin
                         rxslide_in <= 1'b1;
                     end else begin
                         if (rxusrclk2_edge_cnt == 2) begin
                             rxslide_in <= 1'b0;
                         end
                     end
-                   
-                end 
-                end else begin
-
+            end else begin
                     JESD204_state <= 3'b011;
                     nsync <= 1'b1; 
                 end
         end
     end
+    
+    
+// posedge and negaedge is only available for simulation
+//    //always @(negedge o_rxusrclk2 or posedge o_rxusrclk2 ) begin
+//        if(JESD204_state == 3'b010)begin
+//            if (lane0_data0 != K285_K &&
+//                lane0_data1 != K285_K &&
+//                lane0_data2 != K285_K &&
+//                lane0_data3 != K285_K) begin     
+
+//                // if posedge
+//                if(o_rxusrclk2 == 1'b1)begin
+//                    if(rxusrclk2_edge_cnt == 35)begin
+//                        rxusrclk2_edge_cnt <= 0;
+//                     end  else begin
+//                             rxusrclk2_edge_cnt = rxusrclk2_edge_cnt + 1;
+//                     end
+//                end
+//                // if negedge
+//                if(o_rxusrclk2 == 1'b0)begin
+//                    if (rxusrclk2_edge_cnt == 0) begin
+//                        rxslide_in <= 1'b1;
+//                    end else begin
+//                        if (rxusrclk2_edge_cnt == 2) begin
+//                            rxslide_in <= 1'b0;
+//                        end
+//                    end
+                   
+//                end 
+//                end else begin
+
+//                    JESD204_state <= 3'b011;
+//                    nsync <= 1'b1; 
+//                end
+//        end
+//    end
 
     // Transfer Data to User Logic or AXIS Conversion Logic
     assign o_data_clk = o_rxusrclk2;
